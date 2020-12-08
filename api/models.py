@@ -25,6 +25,6 @@ class Genres(models.Model):
 class Titles(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=150)
-    year = models.DecimalField(max_digits=4)
-    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, related_name='categories')
+    year = models.IntegerField()
+    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, null=True, related_name='categories')
     genres = models.ManyToManyField(Genres)
