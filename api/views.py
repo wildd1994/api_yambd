@@ -1,7 +1,7 @@
 
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
-from rest_framework import status, viewsets, filters, permissions
+from rest_framework import status, viewsets, filters, permissions, exceptions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,7 +12,6 @@ from users.models import User
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 from api.models import Categories, Genres, Titles
-
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -77,16 +76,13 @@ def login(request):
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Categories.objects.all()
-    permission_classes = [IsAdminOrReadOnly]
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['=name', ]
     http_method_names = ['get', 'post', 'delete']
     lookup_field = 'slug'
 
-    # def get_permissions(self):
-    #     if self.action == 'list':
-    #         permission_classes = [permissions.AllowAny]
-    #     else:
-    #         permission_classes = [IsAdmin]
-    #     return [permission() for permission in permission_classes]
+    def retrieve(self, request, *args, **kwargs):
+        raise exceptions.MethodNotAllowed('GET')
+
