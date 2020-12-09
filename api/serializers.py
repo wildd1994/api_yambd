@@ -28,7 +28,16 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
-    pass
+    class Meta:
+        model = Genres
+        fields = ('name', 'slug')
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=Genres.objects.all(),
+                fields=['slug'],
+                message='Нельзя создать существующий жанр',
+            )
+        ]
 
 
 class TitleSerializer(serializers.ModelSerializer):
