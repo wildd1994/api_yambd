@@ -1,5 +1,6 @@
-from rest_framework import serializers
+from rest_framework import serializers, validators
 from users.models import User
+from api.models import Categories, Genres, Titles
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -11,3 +12,24 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name': {'required': False},
             'bio': {'required': False},
         }
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Categories
+        fields = ('name', 'slug')
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=Categories.objects.all(),
+                fields=['slug'],
+                message='Нельзя создать существующую категорию',
+            )
+        ]
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    pass
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    pass

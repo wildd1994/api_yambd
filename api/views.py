@@ -1,13 +1,18 @@
+
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, filters, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from api.permissions import IsAdmin
-from api.serializers import UserSerializer
+from api.permissions import IsAdmin, IsAdminOrReadOnly
+from api.serializers import UserSerializer, CategorySerializer
 from users.models import User
+from django.shortcuts import render
+from django_filters.rest_framework import DjangoFilterBackend
+from api.models import Categories, Genres, Titles
+
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -68,3 +73,20 @@ def login(request):
         return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
     token = RefreshToken.for_user(user)
     return Response(data={'token': str(token.access_token)}, status=status.HTTP_200_OK)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Categories.objects.all()
+    permission_classes = [IsAdminOrReadOnly]
+    serializer_class = CategorySerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['=name', ]
+    http_method_names = ['get', 'post', 'delete']
+    lookup_field = 'slug'
+
+    # def get_permissions(self):
+    #     if self.action == 'list':
+    #         permission_classes = [permissions.AllowAny]
+    #     else:
+    #         permission_classes = [IsAdmin]
+    #     return [permission() for permission in permission_classes]
