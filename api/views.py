@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from api.permissions import IsAdmin, IsAdminOrReadOnly
-from api.serializers import UserSerializer, CategorySerializer
+from api.serializers import UserSerializer, CategorySerializer, GenreSerializer, TitleSerializer
 from users.models import User
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
@@ -84,3 +84,20 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         raise exceptions.MethodNotAllowed('GET')
+
+
+class GenresViewSet(viewsets.ModelViewSet):
+    queryset = Genres.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['=name', ]
+    http_method_names = ['get', 'post', 'delete']
+    lookup_field = 'slug'
+
+    def retrieve(self, request, *args, **kwargs):
+        raise exceptions.MethodNotAllowed('GET')
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    pass
