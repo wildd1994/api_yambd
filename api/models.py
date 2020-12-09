@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-
 User = get_user_model()
 
 
@@ -25,6 +24,6 @@ class Titles(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=150)
     year = models.IntegerField()
-    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, null=True, related_name='categories')
+    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, null=True,
+                                 related_name='categories')
     genres = models.ManyToManyField(Genres)
-

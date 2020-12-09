@@ -1,4 +1,3 @@
-
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from rest_framework import status, viewsets, filters, permissions, exceptions
@@ -85,4 +84,3 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         raise exceptions.MethodNotAllowed('GET')
-
