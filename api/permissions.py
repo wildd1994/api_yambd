@@ -30,3 +30,24 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return request.user.role == 'admin'
 
         return False
+
+
+class OwnResourcePermission(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.method in permissions.SAFE_METHODS or \
+               obj.author == request.user or \
+               request.method == 'DELETE' and IsAdmin
+
+
+class IsAuthorOrIsStaffPermission(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return bool(
+            request.user.is_authenticated and
+            request.method in ('PATCH', 'DELETE') and (
+                    request.user == obj.author or
+                    request.user.role == 'admin' or
+                    request.user.role == 'moderator' or
+                    request.user.is_staff or
+                    request.user.is_superuser
+            )
+        )
