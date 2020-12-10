@@ -1,16 +1,22 @@
 from django.contrib.auth.tokens import default_token_generator
+from django.db import IntegrityError
+from rest_framework.exceptions import ParseError
 from django.core import mail
 from rest_framework import status, viewsets, filters, permissions, exceptions
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated, \
+    IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from api.permissions import IsAdmin, IsAdminOrReadOnly
-from api.serializers import UserSerializer, CategorySerializer, GenreSerializer, TitleSerializer
+from api.permissions import IsAdmin, IsAdminOrReadOnly, OwnResourcePermission, \
+    IsAuthorOrIsStaffPermission
+from api.serializers import UserSerializer, CategorySerializer, \
+    GenreSerializer, TitleSerializer, ReviewSerializer, CommentSerializer
 from users.models import User
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from api.models import Categories, Genres, Titles
+from api.models import Categories, Genres, Titles, Reviews
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -70,7 +76,8 @@ def login(request):
     if len(data['field_name']) != 0:
         return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
     token = RefreshToken.for_user(user)
-    return Response(data={'token': str(token.access_token)}, status=status.HTTP_200_OK)
+    return Response(data={'token': str(token.access_token)},
+                    status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -100,4 +107,32 @@ class GenresViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
+    pass
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly, OwnResourcePermission,
+                          IsAuthorOrIsStaffPermission]
+    pagination_class = PageNumberPagination
+
+    def perform_create(self, serializer):
+        get_object_or_404(Titles, id=self.kwargs.get('title_id'))
+        try:
+            serializer.save(author=self.request.user,
+                            title_id=self.kwargs.get('title_id'))
+        except IntegrityError:
+            raise ParseError(detail='Автор уже оставил обзор на этот пост')
+
+    def get_queryset(self):
+        return Reviews.objects.filter(title=self.kwargs.get('title_id'))
+
+    # def partial_update(self, request, *args, **kwargs):
+    #     title = get_object_or_404(Titles, id=self.kwargs.get('title_id'))
+    #     get_object_or_404(title.reviews, pk=self.kwargs.get('pk'), title=title)
+    #     return super().partial_update(request, *args, **kwargs)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
     pass
