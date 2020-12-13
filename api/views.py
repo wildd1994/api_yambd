@@ -114,7 +114,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = CustomFilter
-    
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -134,7 +133,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Reviews.objects.filter(title=self.kwargs.get('title_id'))
 
-    
+
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     pass
