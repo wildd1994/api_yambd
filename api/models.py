@@ -26,12 +26,12 @@ class Genres(models.Model):
 
 class Titles(models.Model):
     name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=150)
-    year = models.IntegerField()
-    category = models.ForeignKey(Categories, on_delete=models.SET_NULL,
-                                 null=True,
+    year = models.IntegerField(null=True, blank=True)
+    category = models.ForeignKey(Categories, on_delete=models.SET_NULL, null=True,
                                  related_name='categories')
-    genres = models.ManyToManyField(Genres)
+    genre = models.ManyToManyField(Genres)
+    rating = models.IntegerField(default=None, null=True)
+    description = models.TextField(max_length=2000, default='')
 
 
 class Reviews(models.Model):
