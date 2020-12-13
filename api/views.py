@@ -17,6 +17,7 @@ from users.models import User
 from django.shortcuts import render, get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from api.models import Categories, Genres, Titles, Reviews
+from api.filters import CustomFilter
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -46,6 +47,7 @@ def view_self(request):
 @api_view(['POST', ])
 def signup(request):
     email = request.POST['email']
+    # email = request.POST.get('email')
     if not User.objects.filter(email=email).exists():
         username = email.split('@')[0]
         user = User.objects.create(username=username, email=email)
@@ -107,7 +109,12 @@ class GenresViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = Titles.objects.all()
+    serializer_class = TitleSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CustomFilter
+    
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -127,12 +134,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return Reviews.objects.filter(title=self.kwargs.get('title_id'))
 
-    # def partial_update(self, request, *args, **kwargs):
-    #     title = get_object_or_404(Titles, id=self.kwargs.get('title_id'))
-    #     get_object_or_404(title.reviews, pk=self.kwargs.get('pk'), title=title)
-    #     return super().partial_update(request, *args, **kwargs)
-
-
+    
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     pass

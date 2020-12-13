@@ -18,6 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Categories
         fields = ('name', 'slug')
@@ -43,9 +44,26 @@ class GenreSerializer(serializers.ModelSerializer):
         ]
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    pass
+class GenreField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = GenreSerializer(value)
+        return serializer.data
 
+
+class CategoryField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = CategorySerializer(value)
+        return serializer.data
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    category = CategoryField(slug_field='slug', queryset=Categories.objects.all(), required=False)
+    genre = GenreField(slug_field='slug', many=True, queryset=Genres.objects.all(), required=False)
+    
+
+    class Meta:
+        model = Titles
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
@@ -97,3 +115,4 @@ class CommentSerializer(serializers.ModelSerializer):
                 fields=['author', 'post']
             )
         ]
+
