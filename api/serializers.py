@@ -15,6 +15,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    # def validate(self, value):
+    #     category = self.context['request']
+    #     print(category.data)
+    #     return value
+
     class Meta:
         model = Categories
         fields = ('name', 'slug')
@@ -40,5 +45,23 @@ class GenreSerializer(serializers.ModelSerializer):
         ]
 
 
+class GenreField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = GenreSerializer(value)
+        return serializer.data
+
+
+class CategoryField(serializers.SlugRelatedField):
+    def to_representation(self, value):
+        serializer = CategorySerializer(value)
+        return serializer.data
+
+
 class TitleSerializer(serializers.ModelSerializer):
-    pass
+    category = CategoryField(slug_field='slug', queryset=Categories.objects.all(), required=False)
+    genre = GenreField(slug_field='slug', many=True, queryset=Genres.objects.all(), required=False)
+
+    class Meta:
+        model = Titles
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
+

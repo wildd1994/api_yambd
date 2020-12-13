@@ -11,7 +11,7 @@ from users.models import User
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 from api.models import Categories, Genres, Titles
-
+from api.filters import CustomFilter
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -40,6 +40,7 @@ def view_self(request):
 @api_view(['POST', ])
 def signup(request):
     email = request.POST['email']
+    # email = request.POST.get('email')
     if not User.objects.filter(email=email).exists():
         username = email.split('@')[0]
         user = User.objects.create(username=username, email=email)
@@ -100,4 +101,9 @@ class GenresViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = Titles.objects.all()
+    serializer_class = TitleSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CustomFilter
+
