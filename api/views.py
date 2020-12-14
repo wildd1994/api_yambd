@@ -1,5 +1,6 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
+from django.db.models import Avg
 from rest_framework import status, viewsets, filters, permissions, exceptions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
@@ -112,6 +113,12 @@ class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = CustomFilter
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.rating = instance.reviews.all().aggregate(Avg('score'))['score__avg']
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
