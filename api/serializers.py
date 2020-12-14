@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers, validators
 from rest_framework.validators import UniqueTogetherValidator
 
@@ -56,61 +57,75 @@ class CategoryField(serializers.SlugRelatedField):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    category = CategoryField(slug_field='slug', queryset=Categories.objects.all(), required=False)
-    genre = GenreField(slug_field='slug', many=True, queryset=Genres.objects.all(), required=False)
+    category = CategoryField(slug_field='slug',
+                             queryset=Categories.objects.all(), required=False)
+    genre = GenreField(slug_field='slug', many=True,
+                       queryset=Genres.objects.all(), required=False)
 
     class Meta:
         model = Titles
-        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
+        fields = (
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category')
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        many=False,
-        read_only=True,
-        slug_field='username'
-    )
     title = serializers.SlugRelatedField(
-        many=False,
+        slug_field='name',
         read_only=True,
-        slug_field='description'
+    )
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
     )
 
-    def validate(self, attrs):
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context['view'].kwargs.get('title_id')
+        title = get_object_or_404(Titles, pk=title_id)
+        if request.method == 'POST':
+            if Reviews.objects.filter(title=title, author=author).exists():
+                raise serializers.ValidationError(
+                    'Author review already exists'
+                )
+        return data
+
+    def create(self, validated_data):
         author = self.context['request'].user
-        title = self.context['view'].kwargs.get('title_id')
-        message = 'Author review already exists'
-        if Reviews.objects.filter(title=title, author=author).exists():
-            raise serializers.ValidationError(message)
-        return attrs
+        title_id = self.context['view'].kwargs.get('title_id')
+        title = get_object_or_404(Titles, pk=title_id)
+        return Reviews.objects.create(
+            title=title,
+            author=author,
+            **validated_data
+        )
 
     class Meta:
-        fields = '__all__'
         model = Reviews
-        unique_together = ['author', 'title']
+        fields = '__all__'
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(
-        many=False,
-        read_only=True,
-        slug_field='username',
-        default=serializers.CurrentUserDefault()
+    review = serializers.SlugRelatedField(
+        slug_field='text',
+        read_only=True
     )
-    post = serializers.SlugRelatedField(
-        many=False,
-        queryset=Reviews.objects.all(),
-        slug_field='id',
-        default=serializers.CurrentUserDefault()
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
     )
 
     class Meta:
-        fields = '__all__'
         model = Comments
-        validators = [
-            UniqueTogetherValidator(
-                message='Comment already exists!',
-                queryset=Comments.objects.all(),
-                fields=['author', 'post']
-            )
-        ]
+        fields = '__all__'
+
+    def create(self, validated_data):
+        author = self.context['request'].user
+        review_id = self.context['view'].kwargs.get('review_id')
+        review = get_object_or_404(Reviews, pk=review_id)
+        return Comments.objects.create(
+            review=review,
+            author=author,
+            **validated_data
+        )
