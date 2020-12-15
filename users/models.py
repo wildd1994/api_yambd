@@ -46,21 +46,30 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
+    class UserRoles(models.TextChoices):
+        USR = 'user', ('User')
+        MOD = 'moderator', ('Moderator')
+        ADM = 'admin', ('Admin')
+
     username = models.CharField(max_length=100, null=False, blank=False, unique=True)
     email = models.EmailField(unique=True, blank=False)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     bio = models.TextField(max_length=1000)
     role = models.CharField(
-        max_length=10,
-        choices=[
-            ('user', 'user'),
-            ('moderator', 'moderator'),
-            ('admin', 'admin'),
-        ],
-        default='user'
+        max_length=20,
+        choices=UserRoles.choices,
+        default=UserRoles.USR,
     )
-    USERNAME_FIELD = 'username'
+
+    @property
+    def is_moderator(self):
+        return self.role == self.UserRoles.MOD
+
+    @property
+    def is_admin(self):
+        return self.role == self.UserRoles.ADM
+
     EMAIL_FIELD = 'email'
     REQUIRED_FIELDS = ['email', ]
     objects = UserManager()
