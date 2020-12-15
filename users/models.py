@@ -2,13 +2,14 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser  # , BaseUserManager
 
 
-class User(AbstractUser):
-    class UserRoles(models.TextChoices):
-        """Possible user roles"""
-        USR = 'user', ('User')
-        MOD = 'moderator', ('Moderator')
-        ADM = 'admin', ('Admin')
+class UserRoles(models.TextChoices):
+    """Possible user roles"""
+    USR = 'user', ('User')
+    MOD = 'moderator', ('Moderator')
+    ADM = 'admin', ('Admin')
 
+
+class User(AbstractUser):
     username = models.CharField(max_length=100, null=False, blank=False, unique=True)
     email = models.EmailField(unique=True, blank=False, verbose_name='Электронная почта')
     first_name = models.CharField(max_length=100)
