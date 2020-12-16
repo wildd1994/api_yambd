@@ -1,7 +1,34 @@
 from django.contrib.auth import get_user_model
+from datetime import datetime
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from users.models import User
+#  from api.models import
+
+
+class Role(models.TextChoices):
+    USER = 'user'
+    MODERATOR = 'moderator'
+    ADMIN = 'admin'
+
+
+class YamDBUser(AbstractUser):
+    AUTO_CREATE_USERNAME_PREFIX = 'yamdb_user'
+    email = models.EmailField(unique=True, blank=False, verbose_name='Электронная почта')
+    bio = models.TextField(blank=True, max_length=1000)
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.USER,
+    )
+
+    @property
+    def is_admin(self):
+        return self.is_superuser or (self.role == Role.ADMIN)
+
+    @property
+    def is_moderator(self):
+        return self.role == Role.MODERATOR
 
 
 class Categories(models.Model):
@@ -44,7 +71,7 @@ class Reviews(models.Model):
         db_index=True
     )
     author = models.ForeignKey(
-        User,
+        YamDBUser,
         on_delete=models.CASCADE,
         related_name='user'
     )
@@ -70,7 +97,7 @@ class Comments(models.Model):
         help_text='Напишите ваш комментарий'
     )
     author = models.ForeignKey(
-        User,
+        YamDBUser,
         on_delete=models.CASCADE,
         verbose_name='commented author',
         related_name='comments'
