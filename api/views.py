@@ -11,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from api.permissions import IsAdmin, IsAdminOrReadOnly, \
     ReviewCommentPermission
 from api.serializers import UserSerializer, CategorySerializer, \
-    GenreSerializer, TitleSerializer, ReviewSerializer, CommentSerializer
+    GenreSerializer, TitlePostSerializer, TitleViewSerializer, ReviewSerializer, CommentSerializer
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from api.models import *
@@ -136,38 +136,44 @@ def auth_get_token(request):
     return response.Response(output_data.data, status=status.HTTP_200_OK)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class ListCreateDestroyViewSet(mixins.ListModelMixin,
+                               mixins.CreateModelMixin,
+                               mixins.DestroyModelMixin,
+                               viewsets.GenericViewSet):
+    """
+    A viewset that provides `destroy`, `create`, and `list` actions.
+    """
+    pass
+
+
+class CategoryViewSet(ListCreateDestroyViewSet):
     queryset = Categories.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['=name', ]
-    http_method_names = ['get', 'post', 'delete']
     lookup_field = 'slug'
 
-    def retrieve(self, request, *args, **kwargs):
-        raise exceptions.MethodNotAllowed('GET')
 
-
-class GenresViewSet(viewsets.ModelViewSet):
+class GenresViewSet(ListCreateDestroyViewSet):
     queryset = Genres.objects.all()
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [filters.SearchFilter]
     search_fields = ['=name', ]
-    http_method_names = ['get', 'post', 'delete']
     lookup_field = 'slug'
-
-    def retrieve(self, request, *args, **kwargs):
-        raise exceptions.MethodNotAllowed('GET')
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Titles.objects.all()
-    serializer_class = TitleSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = CustomFilter
+
+    def get_serializer_class(self):
+        if self.action == 'list' or self.action == 'retrieve':
+            return TitleViewSerializer
+        return TitlePostSerializer
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
