@@ -32,30 +32,53 @@ class YamDBUser(AbstractUser):
 
 
 class Categories(models.Model):
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=150)
+    name = models.CharField(max_length=200, unique=True, verbose_name='Name of category')
+    slug = models.SlugField(max_length=150, unique=True, verbose_name='Slug of category')
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
 
 
 class Genres(models.Model):
-    name = models.CharField(max_length=200)
-    slug = models.SlugField(max_length=150)
+    name = models.CharField(max_length=200, unique=True, verbose_name='Name of genre')
+    slug = models.SlugField(max_length=150, unique=True, verbose_name='Slug of genre')
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Genre'
+
 
 class Titles(models.Model):
-    name = models.CharField(max_length=200)
-    year = models.IntegerField(null=True, blank=True)
+    name = models.CharField(max_length=200, verbose_name='Name of title')
+    year = models.IntegerField(null=True,
+                               blank=True,
+                               db_index=True,
+                               verbose_name='Year of create'
+                               )
     category = models.ForeignKey(Categories, on_delete=models.SET_NULL,
                                  null=True,
-                                 related_name='categories')
-    genre = models.ManyToManyField(Genres)
-    rating = models.IntegerField(default=None, null=True)
-    description = models.TextField(max_length=2000, default='')
+                                 related_name='categories',
+                                 verbose_name='Category of title',
+                                 validators=[
+                                     MinValueValidator(1),
+                                     MaxValueValidator(datetime.today().year)
+                                 ]
+                                 )
+    genre = models.ManyToManyField(Genres, verbose_name='Genre of title', )
+    rating = models.IntegerField(default=None, null=True, verbose_name='Title rating')
+    description = models.TextField(max_length=2000, default='', verbose_name='Title description')
+
+    class Meta:
+        ordering = ['year']
+        verbose_name = 'Title'
 
 
 class Reviews(models.Model):
