@@ -53,18 +53,6 @@ class IsAuthorOrReadonly(permissions.BasePermission):
                 request.user.role == 'admin')
 
 
-class IsAdminOrReadOnly(permissions.BasePermission):
-
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-
-        if request.user.is_authenticated:
-            return request.user.role == 'admin'
-
-        return False
-
-
 class ReviewCommentPermission(permissions.BasePermission):
 
     def has_permission(self, request, view):
