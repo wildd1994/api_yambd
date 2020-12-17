@@ -14,10 +14,9 @@ router_api_v1.register(
     CommentViewSet, basename='comments')
 
 auth_url_patterns = [
-    path('mail/', auth_send_email, name='auth_send_mail'),
+    path('email/', auth_send_email, name='auth_send_mail'),
     path('token/', auth_get_token, name='auth_get_token'),
 ]
-
 
 v1_url_patterns = [
     path('', include(router_api_v1.urls)),
