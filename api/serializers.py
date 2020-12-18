@@ -83,7 +83,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genres
-        exclude = ('id', )
+        exclude = ('id',)
 
 
 class TitleViewSerializer(serializers.ModelSerializer):
@@ -96,8 +96,12 @@ class TitleViewSerializer(serializers.ModelSerializer):
 
 
 class TitlePostSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(slug_field='slug', queryset=Categories.objects.all(), required=False)
-    genre = serializers.SlugRelatedField(slug_field='slug', many=True, queryset=Genres.objects.all(), required=False)
+    category = serializers.SlugRelatedField(slug_field='slug',
+                                            queryset=Categories.objects.all(),
+                                            required=False)
+    genre = serializers.SlugRelatedField(slug_field='slug', many=True,
+                                         queryset=Genres.objects.all(),
+                                         required=False)
 
     class Meta:
         model = Titles
@@ -114,28 +118,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
-
-    def validate(self, data):
-        request = self.context['request']
-        author = request.user
-        title_id = self.context['view'].kwargs.get('title_id')
-        title = get_object_or_404(Titles, pk=title_id)
-        if request.method == 'POST':
-            if Reviews.objects.filter(title=title, author=author).exists():
-                raise serializers.ValidationError(
-                    'Author review already exists'
-                )
-        return data
-
-    def create(self, validated_data):
-        author = self.context['request'].user
-        title_id = self.context['view'].kwargs.get('title_id')
-        title = get_object_or_404(Titles, pk=title_id)
-        return Reviews.objects.create(
-            title=title,
-            author=author,
-            **validated_data
-        )
 
     class Meta:
         model = Reviews
@@ -155,13 +137,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comments
         fields = '__all__'
-
-    def create(self, validated_data):
-        author = self.context['request'].user
-        review_id = self.context['view'].kwargs.get('review_id')
-        review = get_object_or_404(Reviews, pk=review_id)
-        return Comments.objects.create(
-            review=review,
-            author=author,
-            **validated_data
-        )
