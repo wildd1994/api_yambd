@@ -11,7 +11,7 @@ class AdminOnly(permissions.BasePermission):
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     """
-    Только superuser и admin разрешено использовать небезопасные методы.
+    Only superuser and admin are allowed to use unsafe methods.
     """
 
     def has_permission(self, request, view):
@@ -23,7 +23,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 class IsUserOrModerator(permissions.BasePermission):
     """
-    Только автору и модератору разрешено использовать небезопасные методы.
+    Only the author and moderator are allowed to use unsafe methods.
     """
 
     def has_object_permission(self, request, view, obj):

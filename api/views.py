@@ -1,21 +1,10 @@
-from django.contrib.auth.tokens import default_token_generator
-from django.core import mail
-from django.db.models import Avg
-from rest_framework import status, viewsets, filters, permissions, exceptions
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated, \
-    IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from api.permissions import IsAdmin, IsAdminOrReadOnly, \
+from api.permissions import \
     ReviewCommentPermission
-from api.serializers import UserSerializer, CategorySerializer, \
+from api.serializers import CategorySerializer, \
     GenreSerializer, TitlePostSerializer, TitleViewSerializer, \
     ReviewSerializer, CommentSerializer
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from api.models import *
 from api.filters import CustomFilter
 from smtplib import SMTPException
@@ -31,12 +20,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (decorators, filters, mixins, permissions, response,
                             status, viewsets)
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-
-#  from .filters import TitleFilter
-#  from .models import Category, Genre, Review, Title
-from .permissions import AdminOnly, IsAdminOrReadOnly, IsUserOrModerator
+from .permissions import AdminOnly, IsAdminOrReadOnly
 from .serializers import (EmailAuthSerializer,
                           EmailAuthTokenInputSerializer,
                           EmailAuthTokenOutputSerializer,
@@ -54,6 +39,10 @@ def _get_token_for_user(user):
 
 
 class UsersViewSet(viewsets.ModelViewSet):
+    """
+    Filter on is_active: users must first pass activation
+    via e-mail before they get access to the social network.
+    """
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated, AdminOnly)
@@ -67,6 +56,10 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def me(self, request, pk=None):
+        """
+        Which gives and edits
+        information for the profile of the current authorized user.
+        """
         user_object = get_object_or_404(User, username=request.user.username)
         if request.method == 'GET':
             serializer = UserSerializer(user_object)
@@ -83,6 +76,13 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 @decorators.api_view(['POST'])
 def auth_send_email(request):
+    """
+    The first part of the user creation algorithm.
+    an inactive user is being created.
+    The user is sent a confirmation code to the specified e-mail address.
+    also this endpoint can be used for repeated receiving
+    the confirmation code. in this case, the user's status does not change.
+    """
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
     email = input_data.validated_data['email']
@@ -97,15 +97,15 @@ def auth_send_email(request):
 
     try:
         send_mail(
-            'Получение доступа к социальной сети YamDB',
-            f'Ваш код активации: {confirmation_code}',
+            'Getting access to the yamdb social network',
+            f'Your activation code: {confirmation_code}',
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
         )
     except SMTPException as e:
         return response.Response(
-            f'Ошибка посылки e-mail: {e}',
+            f'Error sending e-mail: {e}',
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -114,6 +114,12 @@ def auth_send_email(request):
 
 @decorators.api_view(['POST'])
 def auth_get_token(request):
+    """
+    The second part of the user creation algorithm.
+    By e-mail and confirmation code, the user receives a token to
+    work in the system. So his account is activated.
+    This endpoint can also be used to get the token again.
+    """
     input_data = EmailAuthTokenInputSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
     email = input_data.validated_data['email']

@@ -1,6 +1,4 @@
-from django.shortcuts import get_object_or_404
-from rest_framework import serializers, validators
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from api.models import Categories, Genres, Titles, Reviews, Comments, YamDBUser
@@ -9,23 +7,14 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    Сериализация пользователя
-    Нельзя заводить пользователья с логином me.
-    Оно пересекается с названием endpoint'а.
-    Нельзя заводить имена с префикса, который использует робот
-    при автоматическом создании имён логинов
-    Добавлены новые поля bio, role
-    """
-
     def validate_username(self, value):
         if value == 'me':
-            raise serializers.ValidationError('Запрещено использовать имя me')
+            raise serializers.ValidationError('It is forbidden to use the name "me"')
 
         if value.startswith(User.AUTO_CREATE_USERNAME_PREFIX):
             raise serializers.ValidationError(
                 (
-                    'Имя не должно начинаться с '
+                    'The name must not start with '
                     f'{User.AUTO_CREATE_USERNAME_PREFIX}'
                 )
             )
@@ -44,12 +33,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RestrictedUserSerializer(UserSerializer):
-    """
-    Сериализация для POST, PATCH методов
-    специальный сериализатор с ограничениями на изменение полей:
-    нельзя менять роль
-    """
-
     class Meta:
         fields = (
             'first_name',
