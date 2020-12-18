@@ -58,8 +58,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=('get', 'patch'),
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def me(self, request, pk=None):
-    #TODO Лишний аргумент
+    def me(self, request):
         """
         Which gives and edits
         information for the profile of the current authorized user.
@@ -149,8 +148,7 @@ def auth_get_token(request):
     token = _get_token_for_user(user_object)
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
-    output_data.is_valid(raise_exception=True)
-    #TODO Вы же эти данные сами создаете, они не могут быть невалидными
+    output_data.is_valid()
     return response.Response(output_data.data, status=status.HTTP_200_OK)
 
 
