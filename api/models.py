@@ -12,8 +12,6 @@ class Role(models.TextChoices):
 
 class YamDBUser(AbstractUser):
     AUTO_CREATE_USERNAME_PREFIX = 'yamdb_user'
-    #TODO (Не обязательно) А для чего вы это сделали? Напишите в личку, пожалуйста=) Имхо, лишние данные не стоит хранить в БД
-    # Я уже написал = )
     email = models.EmailField(unique=True, blank=False, verbose_name='Электронная почта')
     bio = models.TextField(blank=True, max_length=1000)
     role = models.CharField(
@@ -24,8 +22,7 @@ class YamDBUser(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.is_superuser or (self.role == Role.ADMIN)
-        #TODO Так как у == приоритет выше, то скобки не нужны. Еще можно посчитать staff-юзера админом
+        return self.is_superuser or self.role == Role.ADMIN or self.is_staff
 
     @property
     def is_moderator(self):
