@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 #TODO Есть ощущения, что вы используете не все пермишены)
 User = get_user_model()
 
-
+#Предлагаю название IsAdministrator . Что думаете?
 class AdminOnly(permissions.BasePermission):
     #TODO Давайте этот пермишен тоже назовем единообразно
     def has_permission(self, request, view):
@@ -17,10 +17,8 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return (
-            request.method == 'GET' or
-            #TODO Давайте использовать список безопасных методов, их несколько
-            (request.user.is_authenticated and request.user.is_admin)
-            #TODO Здесь скобки тоже не нужны
+            request.method in permissions.SAFE_METHODS or
+            request.user.is_authenticated and request.user.is_admin
         )
 
 
@@ -33,8 +31,7 @@ class IsUserOrModerator(permissions.BasePermission):
         return (
             request.method in permissions.SAFE_METHODS or
             obj.author == request.user or
-            (request.method == 'DELETE' and request.user.is_moderator)
-            #TODO Получается, модератор может только удалять? Это ок?Скобки не нужны=)
+            request.method == ['DELETE', 'PUT'] and request.user.is_moderator
         )
 
 

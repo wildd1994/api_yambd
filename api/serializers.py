@@ -7,20 +7,6 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    def validate_username(self, value):
-        #TODO Кажется, это лишняя валидация. Не понятно чем она помогает
-        if value == 'me':
-            raise serializers.ValidationError('It is forbidden to use the name "me"')
-
-        if value.startswith(User.AUTO_CREATE_USERNAME_PREFIX):
-            raise serializers.ValidationError(
-                (
-                    'The name must not start with '
-                    f'{User.AUTO_CREATE_USERNAME_PREFIX}'
-                )
-            )
-        return value
-
     class Meta:
         fields = (
             'first_name',
