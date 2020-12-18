@@ -19,6 +19,7 @@ auth_url_patterns = [
 ]
 
 v1_url_patterns = [
+#TODO Имхо, можно обойтись без этого списка(или следующего) и просто подключать два урла с v1
     path('', include(router_api_v1.urls)),
     path('auth/', include(auth_url_patterns)),
 ]

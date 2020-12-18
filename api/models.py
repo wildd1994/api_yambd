@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 #  from api.models import
+#TODO Комментарии стоит убрать
 
 
 class Role(models.TextChoices):
@@ -13,6 +14,8 @@ class Role(models.TextChoices):
 
 class YamDBUser(AbstractUser):
     AUTO_CREATE_USERNAME_PREFIX = 'yamdb_user'
+    #TODO (Не обязательно) А для чего вы это сделали? Напишите в личку, пожалуйста=) Имхо, лишние данные не стоит хранить в БД
+    # Я уже написал = )
     email = models.EmailField(unique=True, blank=False, verbose_name='Электронная почта')
     bio = models.TextField(blank=True, max_length=1000)
     role = models.CharField(
@@ -24,6 +27,7 @@ class YamDBUser(AbstractUser):
     @property
     def is_admin(self):
         return self.is_superuser or (self.role == Role.ADMIN)
+        #TODO Так как у == приоритет выше, то скобки не нужны. Еще можно посчитать staff-юзера админом
 
     @property
     def is_moderator(self):
@@ -69,6 +73,8 @@ class Titles(models.Model):
                                  validators=[
                                      MinValueValidator(1),
                                      MaxValueValidator(datetime.today().year)
+                                     #TODO Кажется, у вас валидация не на том поле.
+
                                  ]
                                  )
     genre = models.ManyToManyField(Genres, verbose_name='Genre of title', )

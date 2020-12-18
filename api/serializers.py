@@ -8,6 +8,7 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     def validate_username(self, value):
+        #TODO Кажется, это лишняя валидация. Не понятно чем она помогает
         if value == 'me':
             raise serializers.ValidationError('It is forbidden to use the name "me"')
 

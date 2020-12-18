@@ -34,6 +34,7 @@ token_generator = PasswordResetTokenGenerator()
 
 
 def _get_token_for_user(user):
+#TODO Это очень похоже на функцию однострочник, которая используется только в одном месте. Можно обойтись и без нее
     refresh = RefreshToken.for_user(user)
     return str(refresh.access_token)
 
@@ -42,10 +43,12 @@ class UsersViewSet(viewsets.ModelViewSet):
     """
     Filter on is_active: users must first pass activation
     via e-mail before they get access to the social network.
+    #TODO А мне кажется, что в апи должны присутствовать все пользователи, независимо от активации. Тем более для админа
     """
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated, AdminOnly)
+    #TODO Не хватит ли тут одного пермишена?
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
@@ -56,6 +59,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(permissions.IsAuthenticated,)
     )
     def me(self, request, pk=None):
+    #TODO Лишний аргумент
         """
         Which gives and edits
         information for the profile of the current authorized user.
@@ -64,6 +68,8 @@ class UsersViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             serializer = UserSerializer(user_object)
             return response.Response(serializer.data)
+            #TODO (не обязательно) Давайте для ясности везде явно возвращать статусы
+
         serializer = RestrictedUserSerializer(
             user_object,
             data=request.data,
@@ -71,6 +77,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        #TODO Как раз, пользователь не должен уметь изменить свою роль, так как это не безопасно
         return response.Response(serializer.data)
 
 
@@ -88,9 +95,11 @@ def auth_send_email(request):
     email = input_data.validated_data['email']
 
     user_object, created = User.objects.get_or_create(email=email)
+    #TODO Давайте наравне пользоваться ником, коль уж он передается
 
     if created:
         user_object.is_active = False
+        #TODO Получается, если пользователь потерял письмо с токеном, то всё, он больше не сможет получить доступ? Только создавать нового с новой почты? Кажется, не очень правильным поведением.
         user_object.save()
 
     confirmation_code = default_token_generator.make_token(user_object)
@@ -141,6 +150,7 @@ def auth_get_token(request):
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
     output_data.is_valid(raise_exception=True)
+    #TODO Вы же эти данные сами создаете, они не могут быть невалидными
     return response.Response(output_data.data, status=status.HTTP_200_OK)
 
 
@@ -180,12 +190,14 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
+        #TODO (не обязательно) Можно воспользоваться in
             return TitleViewSerializer
         return TitlePostSerializer
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.rating = instance.reviews.all().aggregate(Avg('score'))[
+        #TODO Давайте не будем переопределять целый метод лучше задать аннотацию в кверисете в атрибутах класса
             'score__avg']
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -199,6 +211,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         title = get_object_or_404(Titles, id=self.kwargs.get('title_id'))
         if Reviews.objects.filter(
+        #TODO Это валидация, ее нужно убрать в сериализатор
                 author=self.request.user,
                 title=title
         ).exists():
@@ -206,6 +219,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title=title)
         agg_score = Reviews.objects.filter(title=title).aggregate(Avg('score'))
         title.rating = agg_score['score__avg']
+        #TODO Опять же, рейтинг должен считаться "на лету", а не храниться в базе
         title.save(update_fields=['rating'])
 
     def perform_update(self, serializer):
