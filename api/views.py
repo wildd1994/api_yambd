@@ -33,12 +33,6 @@ User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
 
 
-def _get_token_for_user(user):
-    # TODO Это очень похоже на функцию однострочник, которая используется только в одном месте. Можно обойтись и без нее
-    refresh = RefreshToken.for_user(user)
-    return str(refresh.access_token)
-
-
 class UsersViewSet(viewsets.ModelViewSet):
     """
     Filter on is_active: users must first pass activation
@@ -145,7 +139,7 @@ def auth_get_token(request):
         user_object.is_active = True
         user_object.save()
 
-    token = _get_token_for_user(user_object)
+    token = RefreshToken.for_user(user_object)
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
     output_data.is_valid()
