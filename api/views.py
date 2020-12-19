@@ -66,7 +66,6 @@ class UsersViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # TODO Как раз, пользователь не должен уметь изменить свою роль, так как это не безопасно
         return response.Response(serializer.data, status=status.HTTP_200_OK)
 
 
