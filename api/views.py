@@ -57,8 +57,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         user_object = get_object_or_404(User, username=request.user.username)
         if request.method == 'GET':
             serializer = UserSerializer(user_object)
-            return response.Response(serializer.data)
-            # TODO (не обязательно) Давайте для ясности везде явно возвращать статусы
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         serializer = RestrictedUserSerializer(
             user_object,
@@ -68,7 +67,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         # TODO Как раз, пользователь не должен уметь изменить свою роль, так как это не безопасно
-        return response.Response(serializer.data)
+        return response.Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @decorators.api_view(['POST'])
