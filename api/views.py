@@ -84,6 +84,7 @@ def auth_send_email(request):
 
     user_object, created = User.objects.get_or_create(email=email)
     # TODO Давайте наравне пользоваться ником, коль уж он передается
+    # Требуется помощь, есть идея что имеется ввиду?
 
     if created:
         user_object.is_active = False
