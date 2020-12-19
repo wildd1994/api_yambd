@@ -59,18 +59,17 @@ class Titles(models.Model):
     year = models.IntegerField(null=True,
                                blank=True,
                                db_index=True,
-                               verbose_name='Year of create'
+                               verbose_name='Year of create',
+                               validators=[
+                                   MinValueValidator(1),
+                                   MaxValueValidator(datetime.today().year)
+                               ]
                                )
     category = models.ForeignKey(Categories, on_delete=models.SET_NULL,
                                  null=True,
                                  related_name='categories',
                                  verbose_name='Category of title',
-                                 validators=[
-                                     MinValueValidator(1),
-                                     MaxValueValidator(datetime.today().year)
-                                     #TODO Кажется, у вас валидация не на том поле.
 
-                                 ]
                                  )
     genre = models.ManyToManyField(Genres, verbose_name='Genre of title', )
     rating = models.IntegerField(default=None, null=True, verbose_name='Title rating')

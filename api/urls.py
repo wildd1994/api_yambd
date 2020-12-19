@@ -18,14 +18,7 @@ auth_url_patterns = [
     path('token/', auth_get_token, name='auth_get_token'),
 ]
 
-v1_url_patterns = [
-#TODO Имхо, можно обойтись без этого списка(или следующего) и просто подключать два урла с v1
-
-#Не совсем понимаю что имеется ввиду
-    path('', include(router_api_v1.urls)),
-    path('auth/', include(auth_url_patterns)),
-]
-
 urlpatterns = [
-    path('v1/', include(v1_url_patterns)),
+    path('v1/', include(router_api_v1.urls)),
+    path('v1/auth/', include(auth_url_patterns)),
 ]

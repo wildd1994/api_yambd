@@ -21,7 +21,7 @@ from rest_framework import (decorators, filters, mixins, permissions, response,
                             status, viewsets)
 from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
-from .permissions import AdminOnly, IsAdminOrReadOnly
+from .permissions import IsAdmin, IsAdminOrReadOnly
 from .serializers import (EmailAuthSerializer,
                           EmailAuthTokenInputSerializer,
                           EmailAuthTokenOutputSerializer,
@@ -47,7 +47,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     """
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticated, AdminOnly)
+    permission_classes = (permissions.IsAuthenticated, IsAdmin)
     #TODO Не хватит ли тут одного пермишена?
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
