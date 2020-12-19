@@ -35,11 +35,9 @@ token_generator = PasswordResetTokenGenerator()
 
 class UsersViewSet(viewsets.ModelViewSet):
     """
-    Filter on is_active: users must first pass activation
-    via e-mail before they get access to the social network.
-    # TODO А мне кажется, что в апи должны присутствовать все пользователи, независимо от активации.Тем более для админа
+    Working with users.
     """
-    queryset = User.objects.filter(is_active=True)
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated, IsAdmin)
     # TODO Не хватит ли тут одного пермишена?
