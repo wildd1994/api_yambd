@@ -4,7 +4,7 @@ from api.permissions import \
     ReviewCommentPermission
 from api.serializers import CategorySerializer, \
     GenreSerializer, TitlePostSerializer, TitleViewSerializer, \
-    ReviewSerializer, CommentSerializer
+    ReviewSerializer, CommentSerializer, EmailSerializer
 from api.models import *
 from api.filters import CustomFilter
 from smtplib import SMTPException
@@ -33,22 +33,13 @@ User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
 
 
-def _get_token_for_user(user):
-    # TODO Это очень похоже на функцию однострочник, которая используется только в одном месте. Можно обойтись и без нее
-    refresh = RefreshToken.for_user(user)
-    return str(refresh.access_token)
-
-
 class UsersViewSet(viewsets.ModelViewSet):
     """
-    Filter on is_active: users must first pass activation
-    via e-mail before they get access to the social network.
-    # TODO А мне кажется, что в апи должны присутствовать все пользователи, независимо от активации.Тем более для админа
+    Working with users.
     """
-    queryset = User.objects.filter(is_active=True)
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticated, IsAdmin)
-    # TODO Не хватит ли тут одного пермишена?
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
@@ -66,8 +57,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         user_object = get_object_or_404(User, username=request.user.username)
         if request.method == 'GET':
             serializer = UserSerializer(user_object)
-            return response.Response(serializer.data)
-            # TODO (не обязательно) Давайте для ясности везде явно возвращать статусы
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         serializer = RestrictedUserSerializer(
             user_object,
@@ -76,8 +66,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # TODO Как раз, пользователь не должен уметь изменить свою роль, так как это не безопасно
-        return response.Response(serializer.data)
+        return response.Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @decorators.api_view(['POST'])
@@ -89,17 +78,19 @@ def auth_send_email(request):
     also this endpoint can be used for repeated receiving
     the confirmation code. in this case, the user's status does not change.
     """
+    serializer = EmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
     email = input_data.validated_data['email']
+    username = serializer.data.get('username')
 
-    user_object, created = User.objects.get_or_create(email=email)
-    # TODO Давайте наравне пользоваться ником, коль уж он передается
-
-    if created:
-        user_object.is_active = False
+    user_object, created = User.objects.get_or_create(email=email, username=username)
+        # if created:
+        # user_object.is_active = False
         # TODO Получается, если пользователь потерял письмо с токеном, то всё, он больше не сможет получить доступ? Только создавать нового с новой почты? Кажется, не очень правильным поведением.
-        user_object.save()
+        # Тож сам не справлюсь похоже
+        # user_object.save()
 
     confirmation_code = default_token_generator.make_token(user_object)
 
@@ -145,7 +136,7 @@ def auth_get_token(request):
         user_object.is_active = True
         user_object.save()
 
-    token = _get_token_for_user(user_object)
+    token = RefreshToken.for_user(user_object)
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
     output_data.is_valid()
@@ -187,8 +178,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = CustomFilter
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            # TODO (не обязательно) Можно воспользоваться in
+        if 'list' in self.action or 'retrieve' in self.action:
             return TitleViewSerializer
         return TitlePostSerializer
 
