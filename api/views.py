@@ -178,8 +178,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filterset_class = CustomFilter
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            # TODO (не обязательно) Можно воспользоваться in
+        if 'list' in self.action or 'retrieve' in self.action:
             return TitleViewSerializer
         return TitlePostSerializer
 
