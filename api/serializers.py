@@ -31,6 +31,11 @@ class RestrictedUserSerializer(UserSerializer):
         model = User
 
 
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField()
+
+
 class EmailAuthSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
 

@@ -4,7 +4,7 @@ from api.permissions import \
     ReviewCommentPermission
 from api.serializers import CategorySerializer, \
     GenreSerializer, TitlePostSerializer, TitleViewSerializer, \
-    ReviewSerializer, CommentSerializer
+    ReviewSerializer, CommentSerializer, EmailSerializer
 from api.models import *
 from api.filters import CustomFilter
 from smtplib import SMTPException
@@ -78,19 +78,19 @@ def auth_send_email(request):
     also this endpoint can be used for repeated receiving
     the confirmation code. in this case, the user's status does not change.
     """
+    serializer = EmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
     email = input_data.validated_data['email']
+    username = serializer.data.get('username')
 
-    user_object, created = User.objects.get_or_create(email=email)
-    # TODO Давайте наравне пользоваться ником, коль уж он передается
-    # Требуется помощь, есть идея что имеется ввиду?
-
-    if created:
-        user_object.is_active = False
+    user_object, created = User.objects.get_or_create(email=email, username=username)
+        # if created:
+        # user_object.is_active = False
         # TODO Получается, если пользователь потерял письмо с токеном, то всё, он больше не сможет получить доступ? Только создавать нового с новой почты? Кажется, не очень правильным поведением.
         # Тож сам не справлюсь похоже
-        user_object.save()
+        # user_object.save()
 
     confirmation_code = default_token_generator.make_token(user_object)
 

@@ -14,6 +14,7 @@ class YamDBUser(AbstractUser):
     AUTO_CREATE_USERNAME_PREFIX = 'yamdb_user'
     email = models.EmailField(unique=True, blank=False, verbose_name='Электронная почта')
     bio = models.TextField(blank=True, max_length=1000)
+    username = models.CharField(max_length=30, unique=True, null=True, blank=True)
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
