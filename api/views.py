@@ -86,11 +86,6 @@ def auth_send_email(request):
     username = serializer.data.get('username')
 
     user_object, created = User.objects.get_or_create(email=email, username=username)
-        # if created:
-        # user_object.is_active = False
-        # TODO Получается, если пользователь потерял письмо с токеном, то всё, он больше не сможет получить доступ? Только создавать нового с новой почты? Кажется, не очень правильным поведением.
-        # Тож сам не справлюсь похоже
-        # user_object.save()
 
     confirmation_code = default_token_generator.make_token(user_object)
 
