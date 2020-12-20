@@ -64,6 +64,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleViewSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Titles
@@ -97,6 +98,20 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reviews
         fields = '__all__'
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request.method != 'POST':
+            return data
+
+        title_id = self.context.get('view').kwargs.get('title_id')
+        user = self.context.get('request').user
+        queryset = Reviews.objects.filter(author=user, title=title_id)
+        if queryset.exists():
+            raise serializers.ValidationError(
+                'Можно оставить только один отзыв на произведение.'
+            )
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):

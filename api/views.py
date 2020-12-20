@@ -57,7 +57,8 @@ class UsersViewSet(viewsets.ModelViewSet):
         user_object = get_object_or_404(User, username=request.user.username)
         if request.method == 'GET':
             serializer = UserSerializer(user_object)
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            return response.Response(serializer.data,
+                                     status=status.HTTP_200_OK)
 
         serializer = RestrictedUserSerializer(
             user_object,
@@ -85,7 +86,8 @@ def auth_send_email(request):
     email = input_data.validated_data['email']
     username = serializer.data.get('username')
 
-    user_object, created = User.objects.get_or_create(email=email, username=username)
+    user_object, created = User.objects.get_or_create(email=email,
+                                                      username=username)
 
     confirmation_code = default_token_generator.make_token(user_object)
 
@@ -167,7 +169,7 @@ class GenresViewSet(ListCreateDestroyViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Titles.objects.all()
+    queryset = Titles.objects.annotate(rating=Avg('reviews__score'))
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = CustomFilter
@@ -177,44 +179,21 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleViewSerializer
         return TitlePostSerializer
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.rating = instance.reviews.all().aggregate(Avg('score'))[
-            # TODO Давайте не будем переопределять целый метод лучше задать аннотацию в кверисете в атрибутах класса
-            'score__avg']
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [ReviewCommentPermission]
     pagination_class = PageNumberPagination
 
-    def perform_create(self, serializer):
-        title = get_object_or_404(Titles, id=self.kwargs.get('title_id'))
-        if Reviews.objects.filter(
-                # TODO Это валидация, ее нужно убрать в сериализатор
-                author=self.request.user,
-                title=title
-        ).exists():
-            raise ValidationError('Оценка уже выставлена')
-        serializer.save(author=self.request.user, title=title)
-        agg_score = Reviews.objects.filter(title=title).aggregate(Avg('score'))
-        title.rating = agg_score['score__avg']
-        # TODO Опять же, рейтинг должен считаться "на лету", а не храниться в базе
-        title.save(update_fields=['rating'])
-
-    def perform_update(self, serializer):
-        serializer.save()
-        title = get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
-        agg_score = Reviews.objects.filter(title=title).aggregate(Avg('score'))
-        title.rating = agg_score['score__avg']
-        title.save(update_fields=['rating'])
-
     def get_queryset(self):
-        title = get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
-        return Reviews.objects.filter(title=title)
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Titles, id=title_id)
+        return title.reviews.all()
+
+    def perform_create(self, serializer):
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Titles, id=title_id)
+        serializer.save(author=self.request.user, title_id=title.id)
 
 
 class CommentViewSet(viewsets.ModelViewSet):

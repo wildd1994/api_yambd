@@ -12,9 +12,11 @@ class Role(models.TextChoices):
 
 class YamDBUser(AbstractUser):
     AUTO_CREATE_USERNAME_PREFIX = 'yamdb_user'
-    email = models.EmailField(unique=True, blank=False, verbose_name='Электронная почта')
+    email = models.EmailField(unique=True, blank=False,
+                              verbose_name='Электронная почта')
     bio = models.TextField(blank=True, max_length=1000)
-    username = models.CharField(max_length=30, unique=True, null=True, blank=True)
+    username = models.CharField(max_length=30, unique=True, null=True,
+                                blank=True)
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
@@ -31,8 +33,10 @@ class YamDBUser(AbstractUser):
 
 
 class Categories(models.Model):
-    name = models.CharField(max_length=200, unique=True, verbose_name='Name of category')
-    slug = models.SlugField(max_length=150, unique=True, verbose_name='Slug of category')
+    name = models.CharField(max_length=200, unique=True,
+                            verbose_name='Name of category')
+    slug = models.SlugField(max_length=150, unique=True,
+                            verbose_name='Slug of category')
 
     def __str__(self):
         return self.name
@@ -44,8 +48,10 @@ class Categories(models.Model):
 
 
 class Genres(models.Model):
-    name = models.CharField(max_length=200, unique=True, verbose_name='Name of genre')
-    slug = models.SlugField(max_length=150, unique=True, verbose_name='Slug of genre')
+    name = models.CharField(max_length=200, unique=True,
+                            verbose_name='Name of genre')
+    slug = models.SlugField(max_length=150, unique=True,
+                            verbose_name='Slug of genre')
 
     def __str__(self):
         return self.name
@@ -73,11 +79,10 @@ class Titles(models.Model):
 
                                  )
     genre = models.ManyToManyField(Genres, verbose_name='Genre of title', )
-    rating = models.IntegerField(default=None, null=True, verbose_name='Title rating')
-    description = models.TextField(max_length=2000, default='', verbose_name='Title description')
+    description = models.TextField(max_length=2000, default='',
+                                   verbose_name='Title description')
 
     class Meta:
-        ordering = ['year']
         verbose_name = 'Title'
 
 
