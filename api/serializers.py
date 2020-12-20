@@ -1,6 +1,4 @@
-from django.shortcuts import get_object_or_404
-from rest_framework import serializers, validators
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from api.models import Categories, Genres, Titles, Reviews, Comments, YamDBUser
@@ -9,28 +7,6 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """
-    Сериализация пользователя
-    Нельзя заводить пользователья с логином me.
-    Оно пересекается с названием endpoint'а.
-    Нельзя заводить имена с префикса, который использует робот
-    при автоматическом создании имён логинов
-    Добавлены новые поля bio, role
-    """
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError('Запрещено использовать имя me')
-
-        if value.startswith(User.AUTO_CREATE_USERNAME_PREFIX):
-            raise serializers.ValidationError(
-                (
-                    'Имя не должно начинаться с '
-                    f'{User.AUTO_CREATE_USERNAME_PREFIX}'
-                )
-            )
-        return value
-
     class Meta:
         fields = (
             'first_name',
@@ -44,12 +20,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RestrictedUserSerializer(UserSerializer):
-    """
-    Сериализация для POST, PATCH методов
-    специальный сериализатор с ограничениями на изменение полей:
-    нельзя менять роль
-    """
-
     class Meta:
         fields = (
             'first_name',
@@ -59,6 +29,11 @@ class RestrictedUserSerializer(UserSerializer):
             'email',
         )
         model = User
+
+
+class EmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField()
 
 
 class EmailAuthSerializer(serializers.Serializer):
@@ -89,6 +64,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleViewSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.FloatField(read_only=True)
 
     class Meta:
         model = Titles
@@ -122,6 +98,20 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reviews
         fields = '__all__'
+
+    def validate(self, data):
+        request = self.context.get('request')
+        if request.method != 'POST':
+            return data
+
+        title_id = self.context.get('view').kwargs.get('title_id')
+        user = self.context.get('request').user
+        queryset = Reviews.objects.filter(author=user, title=title_id)
+        if queryset.exists():
+            raise serializers.ValidationError(
+                'Можно оставить только один отзыв на произведение.'
+            )
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):

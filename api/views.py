@@ -1,21 +1,10 @@
-from django.contrib.auth.tokens import default_token_generator
-from django.core import mail
-from django.db.models import Avg
-from rest_framework import status, viewsets, filters, permissions, exceptions
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated, \
-    IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
-from api.permissions import IsAdmin, IsAdminOrReadOnly, \
+from api.permissions import \
     ReviewCommentPermission
-from api.serializers import UserSerializer, CategorySerializer, \
+from api.serializers import CategorySerializer, \
     GenreSerializer, TitlePostSerializer, TitleViewSerializer, \
-    ReviewSerializer, CommentSerializer
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
+    ReviewSerializer, CommentSerializer, EmailSerializer
 from api.models import *
 from api.filters import CustomFilter
 from smtplib import SMTPException
@@ -31,12 +20,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (decorators, filters, mixins, permissions, response,
                             status, viewsets)
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-
-#  from .filters import TitleFilter
-#  from .models import Category, Genre, Review, Title
-from .permissions import AdminOnly, IsAdminOrReadOnly, IsUserOrModerator
+from .permissions import IsAdmin, IsAdminOrReadOnly
 from .serializers import (EmailAuthSerializer,
                           EmailAuthTokenInputSerializer,
                           EmailAuthTokenOutputSerializer,
@@ -48,15 +33,13 @@ User = get_user_model()
 token_generator = PasswordResetTokenGenerator()
 
 
-def _get_token_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return str(refresh.access_token)
-
-
 class UsersViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.filter(is_active=True)
+    """
+    Working with users.
+    """
+    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticated, AdminOnly)
+    permission_classes = (permissions.IsAuthenticated, IsAdmin)
     lookup_field = 'username'
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
@@ -66,11 +49,17 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=('get', 'patch'),
         permission_classes=(permissions.IsAuthenticated,)
     )
-    def me(self, request, pk=None):
+    def me(self, request):
+        """
+        Which gives and edits
+        information for the profile of the current authorized user.
+        """
         user_object = get_object_or_404(User, username=request.user.username)
         if request.method == 'GET':
             serializer = UserSerializer(user_object)
-            return response.Response(serializer.data)
+            return response.Response(serializer.data,
+                                     status=status.HTTP_200_OK)
+
         serializer = RestrictedUserSerializer(
             user_object,
             data=request.data,
@@ -78,34 +67,41 @@ class UsersViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return response.Response(serializer.data)
+        return response.Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @decorators.api_view(['POST'])
 def auth_send_email(request):
+    """
+    The first part of the user creation algorithm.
+    an inactive user is being created.
+    The user is sent a confirmation code to the specified e-mail address.
+    also this endpoint can be used for repeated receiving
+    the confirmation code. in this case, the user's status does not change.
+    """
+    serializer = EmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
     email = input_data.validated_data['email']
+    username = serializer.data.get('username')
 
-    user_object, created = User.objects.get_or_create(email=email)
-
-    if created:
-        user_object.is_active = False
-        user_object.save()
+    user_object, created = User.objects.get_or_create(email=email,
+                                                      username=username)
 
     confirmation_code = default_token_generator.make_token(user_object)
 
     try:
         send_mail(
-            'Получение доступа к социальной сети YamDB',
-            f'Ваш код активации: {confirmation_code}',
+            'Getting access to the yamdb social network',
+            f'Your activation code: {confirmation_code}',
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
         )
     except SMTPException as e:
         return response.Response(
-            f'Ошибка посылки e-mail: {e}',
+            f'Error sending e-mail: {e}',
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -114,6 +110,12 @@ def auth_send_email(request):
 
 @decorators.api_view(['POST'])
 def auth_get_token(request):
+    """
+    The second part of the user creation algorithm.
+    By e-mail and confirmation code, the user receives a token to
+    work in the system. So his account is activated.
+    This endpoint can also be used to get the token again.
+    """
     input_data = EmailAuthTokenInputSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
     email = input_data.validated_data['email']
@@ -131,10 +133,10 @@ def auth_get_token(request):
         user_object.is_active = True
         user_object.save()
 
-    token = _get_token_for_user(user_object)
+    token = RefreshToken.for_user(user_object)
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
-    output_data.is_valid(raise_exception=True)
+    output_data.is_valid()
     return response.Response(output_data.data, status=status.HTTP_200_OK)
 
 
@@ -167,22 +169,15 @@ class GenresViewSet(ListCreateDestroyViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Titles.objects.all()
+    queryset = Titles.objects.annotate(rating=Avg('reviews__score'))
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = CustomFilter
 
     def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
+        if 'list' in self.action or 'retrieve' in self.action:
             return TitleViewSerializer
         return TitlePostSerializer
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.rating = instance.reviews.all().aggregate(Avg('score'))[
-            'score__avg']
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -190,28 +185,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [ReviewCommentPermission]
     pagination_class = PageNumberPagination
 
-    def perform_create(self, serializer):
-        title = get_object_or_404(Titles, id=self.kwargs.get('title_id'))
-        if Reviews.objects.filter(
-                author=self.request.user,
-                title=title
-        ).exists():
-            raise ValidationError('Оценка уже выставлена')
-        serializer.save(author=self.request.user, title=title)
-        agg_score = Reviews.objects.filter(title=title).aggregate(Avg('score'))
-        title.rating = agg_score['score__avg']
-        title.save(update_fields=['rating'])
-
-    def perform_update(self, serializer):
-        serializer.save()
-        title = get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
-        agg_score = Reviews.objects.filter(title=title).aggregate(Avg('score'))
-        title.rating = agg_score['score__avg']
-        title.save(update_fields=['rating'])
-
     def get_queryset(self):
-        title = get_object_or_404(Titles, pk=self.kwargs.get('title_id'))
-        return Reviews.objects.filter(title=title)
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Titles, id=title_id)
+        return title.reviews.all()
+
+    def perform_create(self, serializer):
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Titles, id=title_id)
+        serializer.save(author=self.request.user, title_id=title.id)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
