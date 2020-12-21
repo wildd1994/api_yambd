@@ -11,8 +11,6 @@ class Role(models.TextChoices):
 
 
 class YamDBUser(AbstractUser):
-    AUTO_CREATE_USERNAME_PREFIX = 'yamdb_user'
-    #TODO Вроде в личке договорились, что это не нужно)
     email = models.EmailField(unique=True, blank=False,
                               verbose_name='Электронная почта')
     bio = models.TextField(blank=True, max_length=1000)

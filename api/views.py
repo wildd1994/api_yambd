@@ -130,16 +130,9 @@ def auth_get_token(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    if not user_object.is_active:
-    #TODO Лишняя логика осталась)
-        user_object.is_active = True
-        user_object.save()
-
     token = RefreshToken.for_user(user_object)
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
-    output_data.is_valid()
-    #TODO Так как это ваши данные, то их не нужно проверять на валидность)
     return response.Response(output_data.data, status=status.HTTP_200_OK)
 
 

@@ -6,7 +6,6 @@ User = get_user_model()
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_admin
-        #TODO Я предлагал добавить проверку на авторизацию именно сюда, тогда бы во вьюхах было бы чуть лаконичнее)
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
