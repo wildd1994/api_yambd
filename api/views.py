@@ -1,10 +1,8 @@
-from rest_framework.exceptions import ValidationError
-from rest_framework.response import Response
 from api.permissions import \
     ReviewCommentPermission
 from api.serializers import CategorySerializer, \
     GenreSerializer, TitlePostSerializer, TitleViewSerializer, \
-    ReviewSerializer, CommentSerializer, EmailSerializer
+    ReviewSerializer, CommentSerializer
 from api.models import *
 from api.filters import CustomFilter
 from smtplib import SMTPException
@@ -79,8 +77,7 @@ def auth_send_email(request):
     also this endpoint can be used for repeated receiving
     the confirmation code. in this case, the user's status does not change.
     """
-    serializer = EmailSerializer(data=request.data)
-    #TODO Давайте просто добавим в один сериализатор ник и в этой вьюхе будем пользоваться только им
+    serializer = EmailAuthSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
