@@ -80,6 +80,7 @@ def auth_send_email(request):
     the confirmation code. in this case, the user's status does not change.
     """
     serializer = EmailSerializer(data=request.data)
+    #TODO Давайте просто добавим в один сериализатор ник и в этой вьюхе будем пользоваться только им
     serializer.is_valid(raise_exception=True)
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
@@ -130,6 +131,7 @@ def auth_get_token(request):
         )
 
     if not user_object.is_active:
+    #TODO Лишняя логика осталась)
         user_object.is_active = True
         user_object.save()
 
@@ -137,6 +139,7 @@ def auth_get_token(request):
 
     output_data = EmailAuthTokenOutputSerializer(data={'token': token})
     output_data.is_valid()
+    #TODO Так как это ваши данные, то их не нужно проверять на валидность)
     return response.Response(output_data.data, status=status.HTTP_200_OK)
 
 
