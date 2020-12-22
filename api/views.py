@@ -78,6 +78,7 @@ def auth_send_email(request):
     the confirmation code. in this case, the user's status does not change.
     """
     serializer = EmailAuthSerializer(data=request.data)
+    #TODO Теперь тут есть несколько лишних действий, давайте уберем их, чтобы все было чисто и красиво)
     serializer.is_valid(raise_exception=True)
     input_data = EmailAuthSerializer(data=request.data)
     input_data.is_valid(raise_exception=True)
