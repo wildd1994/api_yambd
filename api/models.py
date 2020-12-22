@@ -16,6 +16,7 @@ class YamDBUser(AbstractUser):
     bio = models.TextField(blank=True, max_length=1000)
     username = models.CharField(max_length=30, unique=True, null=True,
                                 blank=True)
+    #TODO username, кстати, не обязательно переопределять, он уже есть в AbstractUser
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
