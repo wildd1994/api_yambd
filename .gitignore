@@ -4,7 +4,7 @@ venv/
 
 __pycache__/
 *.py[cod]
-
+sent_emails/
 .idea
 .DS_Store
 .AppleDouble
